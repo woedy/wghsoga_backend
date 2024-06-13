@@ -1,0 +1,70 @@
+version: "3.8"
+services:
+
+  # Redis
+  redis:
+    image: redis:alpine
+    container_name: tas_redis
+
+  # Database Postgres
+  db:
+    image: postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=tas_postgres
+      - POSTGRES_USER=tas_postgres
+      - POSTGRES_PASSWORD=tas_postgres
+    container_name: tas_postgres_db
+    restart: unless-stopped
+
+  # Django Application
+  tas_app:
+    build: .
+    volumes:
+      - .:/tas_django
+      - ./static_cdn:/var/lib/static_cdn
+    ports:
+      - 80:80
+    image: tas_app:django
+    container_name: tas_django_app
+    command: python manage.py runserver 0.0.0.0:80
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  # Celery Worker
+  celery:
+    restart: always
+    build:
+      context: .
+    command: celery -A tas_project worker -l DEBUG
+    volumes:
+      - .:/tas_django
+    container_name: tas_celery
+    depends_on:
+      - db
+      - redis
+      - tas_app
+
+  # Celery Beat
+  celery-beat:
+    restart: always
+    build:
+      context: .
+    command: celery -A tas_project beat -l DEBUG
+    volumes:
+      - .:/tas_django
+    container_name: tas_celery_beat
+    depends_on:
+      - db
+      - redis
+      - tas_app
+
+volumes:
+  static_cdn:
+
+#networks:
+#  default:
+#    external: true
+#    name: docker-nginx-proxy-manager
