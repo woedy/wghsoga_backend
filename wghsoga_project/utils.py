@@ -128,6 +128,38 @@ def unique_event_id_generator(instance):
     return event_id
 
 
+def unique_product_id_generator(instance):
+    """
+    This is for a product_id field
+    :param instance:
+    :return:
+    """
+    size = random.randint(5, 7)
+    product_id = "PROD-" + random_string_generator(size=size, chars=string.ascii_uppercase + string.digits) + "-(CT)"
+
+    Klass = instance.__class__
+    qs_exists = Klass.objects.filter(product_id=product_id).exists()
+    if qs_exists:
+        return None
+    return product_id
+
+
+def unique_order_id_generator(instance):
+    """
+    This is for a order_id field
+    :param instance:
+    :return:
+    """
+    size = random.randint(5, 7)
+    order_id = "ORD-" + random_string_generator(size=size, chars=string.ascii_uppercase + string.digits) + "-(ER)"
+
+    Klass = instance.__class__
+    qs_exists = Klass.objects.filter(order_id=order_id).exists()
+    if qs_exists:
+        return None
+    return order_id
+
+
 def get_file_ext(filepath):
     base_name = os.path.basename(filepath)
     name, ext = os.path.splitext(base_name)

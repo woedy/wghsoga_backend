@@ -1,44 +1,94 @@
 # models.py
+import random
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import pre_save
+
+from wghsoga_project.utils import get_file_ext, unique_product_id_generator, unique_order_id_generator
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
 
 class Product(models.Model):
+    product_id = models.CharField(max_length=200, null=True, blank=True)
+
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True)
     description = models.TextField(blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.IntegerField()
     available = models.BooleanField(default=True)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    image = models.ImageField(upload_to='products/', blank=True, null=True)
+
+    is_archived = models.BooleanField(default=False)
+    active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 
     def __str__(self):
         return self.name
 
-class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    full_name = models.CharField(max_length=100)
-    email = models.EmailField()
-    phone = models.CharField(max_length=15)
-    address = models.TextField()
 
-    def __str__(self):
-        return self.full_name
+
+def pre_save_product_id_receiver(sender, instance, *args, **kwargs):
+    if not instance.product_id:
+        instance.product_id = unique_product_id_generator(instance)
+
+pre_save.connect(pre_save_product_id_receiver, sender=Product)
+
+
+
+
+def upload_product_image_path(instance, filename):
+    new_filename = random.randint(1, 3910209312)
+    name, ext = get_file_ext(filename)
+    final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
+    return "product/{new_filename}/{final_filename}".format(
+        new_filename=new_filename,
+        final_filename=final_filename
+    )
+
+
+def upload_product_video_path(instance, filename):
+    new_filename = random.randint(1, 3910209312)
+    name, ext = get_file_ext(filename)
+    final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
+    return "product/videos/{new_filename}/{final_filename}".format(
+        new_filename=new_filename,
+        final_filename=final_filename
+    )
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="product_images")
+    image = models.ImageField(upload_to=upload_product_image_path, null=True, blank=True)
+
+    is_archived = models.BooleanField(default=False)
+
+    active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class ProductVideo(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="event_videos")
+    video = models.FileField(upload_to=upload_product_video_path, null=True, blank=True)
+
+    is_archived = models.BooleanField(default=False)
+
+    active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 
 class Order(models.Model):
-    customer = models.ForeignKey(Customer, related_name='orders', on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
+    customer = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=(
         ('Pending', 'Pending'),
         ('Processed', 'Processed'),
@@ -47,8 +97,24 @@ class Order(models.Model):
         ('Cancelled', 'Cancelled'),
     ), default='Pending')
 
+    is_archived = models.BooleanField(default=False)
+
+    active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
-        return f"Order {self.id} - {self.customer.full_name}"
+        return f"Order {self.id} - {self.customer.first_name}"
+
+
+
+def pre_save_order_id_receiver(sender, instance, *args, **kwargs):
+    if not instance.order_id:
+        instance.order_id = unique_order_id_generator(instance)
+
+pre_save.connect(pre_save_order_id_receiver, sender=Order)
+
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
@@ -70,12 +136,12 @@ class ShippingAddress(models.Model):
         return self.address
 
 class Cart(models.Model):
-    customer = models.ForeignKey(Customer, related_name='cart', on_delete=models.CASCADE)
+    customer = models.ForeignKey(User, related_name='cart', on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Cart for {self.customer.full_name}"
+        return f"Cart for {self.customer.first_name}"
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)

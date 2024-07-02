@@ -77,7 +77,7 @@ def add_event(request):
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_images(request):
+def add_event_images(request):
     payload = {}
     data = {}
     errors = {}
@@ -112,7 +112,7 @@ def add_images(request):
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_videos(request):
+def add_event_videos(request):
     payload = {}
     data = {}
     errors = {}
