@@ -1,11 +1,13 @@
 # models.py
 import random
 
+from django.contrib.auth import get_user_model
 from django.db import models
-from django.contrib.auth.models import User
 from django.db.models.signals import pre_save
 
 from wghsoga_project.utils import get_file_ext, unique_product_id_generator, unique_order_id_generator
+
+User = get_user_model()
 
 
 class Category(models.Model):
