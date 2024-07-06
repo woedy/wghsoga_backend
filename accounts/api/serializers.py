@@ -38,6 +38,15 @@ class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 
 
+class UserDetailsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = "__all__"
+
+
+
+
 class ListAllUsersSerializer(serializers.ModelSerializer):
 
     class Meta:

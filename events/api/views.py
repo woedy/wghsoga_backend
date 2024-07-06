@@ -1,11 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from requests import Response
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from events.api.serializers import AllEventsSerializer, EventDetailsSerializer
 from events.models import Event, EventVideo, EventImage
@@ -68,10 +68,10 @@ def add_event(request):
 
         data["event_id"] = new_event.event_id
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
@@ -289,10 +289,10 @@ def edit_event(request):
 
         data["event_id"] = event.event_id
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
@@ -322,10 +322,10 @@ def archive_event(request):
         event.is_archived = True
         event.save()
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
@@ -355,10 +355,10 @@ def unarchive_event(request):
         event.is_archived = False
         event.save()
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
@@ -387,10 +387,10 @@ def delete_event(request):
 
         event.delete()
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['GET', ])

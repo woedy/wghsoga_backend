@@ -76,7 +76,7 @@ class EventImage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class EventVideo(models.Model):
-    news = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_videos")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_videos")
     video = models.FileField(upload_to=upload_event_video_path, null=True, blank=True)
 
     is_archived = models.BooleanField(default=False)

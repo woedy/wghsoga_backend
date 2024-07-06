@@ -3,7 +3,7 @@ from django.urls import path
 from accounts.api.views import register_user, verify_user_email, resend_email_verification, UserLogin, \
     PasswordResetView, confirm_otp_password_view, resend_password_otp, new_password_reset_view, remove_user_view, \
     edit_account, list_all_users_view, list_all_archived_users_view, get_user_details_view, archive_user_view, \
-    unarchive_user_view, delete_user_view
+    unarchive_user_view, delete_user_view, validate_email, update_user_info_view
 
 app_name = 'accounts'
 
@@ -11,6 +11,7 @@ urlpatterns = [
     #path('register-user/', register_user, name="register_user"),
 
 
+    path('validate-email/', validate_email, name="validate_email"),
     path('register-user/', register_user, name="register_user"),
     path('edit-account/', edit_account, name="edit_account"),
 
@@ -32,5 +33,7 @@ urlpatterns = [
     path('archive-user/', archive_user_view, name="archive_user_view"),
     path('unarchive-user/', unarchive_user_view, name="unarchive_user_view"),
     path('delete-user/', delete_user_view, name="delete_user_view"),
+
+    path('update-user-info/', update_user_info_view, name="update_user_info_view"),
 
 ]

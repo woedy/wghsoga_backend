@@ -1,10 +1,10 @@
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from requests import Response
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from projects.api.serializers import AllProjectsSerializer, ProjectDetailsSerializer
 from projects.models import Project, ProjectImage, ProjectVideo
@@ -22,9 +22,6 @@ def add_project(request):
         title = request.data.get('title', "")
         details = request.data.get('details', "")
         target = request.data.get('target', "")
-
-        images = request.data.get('images', [])
-        videos = request.data.get('videos', [])
 
         if not title:
             errors['title'] = ['Title is required.']
@@ -50,27 +47,14 @@ def add_project(request):
 
         )
 
-
-        for image in images:
-            new_image = ProjectImage.objects.create(
-                project=new_project,
-                image=image
-            )
-
-        for video in videos:
-            new_video = ProjectVideo.objects.create(
-                project=new_project,
-                video=video
-            )
-
         data["project_id"] = new_project.project_id
 
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -78,7 +62,7 @@ def add_project(request):
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_images(request):
+def add_project_images(request):
     payload = {}
     data = {}
     errors = {}
@@ -108,16 +92,16 @@ def add_images(request):
             )
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_videos(request):
+def add_project_videos(request):
     payload = {}
     data = {}
     errors = {}
@@ -147,10 +131,10 @@ def add_videos(request):
             )
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 

@@ -1,11 +1,26 @@
+import random
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import pre_save
 
 from communications.models import PrivateChatRoom
-from wghsoga_project.utils import unique_profile_id_generator
+from wghsoga_project.utils import unique_profile_id_generator, get_file_ext
 
 User = get_user_model()
+
+
+
+def upload_image_path(instance, filename):
+    new_filename = random.randint(1, 3910209312)
+    name, ext = get_file_ext(filename)
+    final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
+    return "user_photos/{new_filename}/{final_filename}".format(
+        new_filename=new_filename,
+        final_filename=final_filename
+    )
+
+
 
 class UserProfile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_profile')
@@ -50,6 +65,7 @@ pre_save.connect(pre_save_profile_id_receiver, sender=UserProfile)
 
 class UserPhoto(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_photos')
+    photo = models.ImageField(upload_to=upload_image_path, null=True, blank=True)
 
     is_deleted = models.BooleanField(default=False)
     active = models.BooleanField(default=False)

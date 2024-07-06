@@ -1,11 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
-from requests import Response
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from news.api.serializers import AllNewssSerializer, NewsDetailsSerializer
 from news.models import News, NewsImage, NewsVideo, NewsComment
@@ -25,9 +25,6 @@ def add_news(request):
         title = request.data.get('title', "")
         content = request.data.get('content', "")
         author_id = request.data.get('author_id', "")
-
-        images = request.data.get('images', [])
-        videos = request.data.get('videos', [])
 
         if not title:
             errors['title'] = ['Title is required.']
@@ -63,10 +60,10 @@ def add_news(request):
 
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -74,7 +71,7 @@ def add_news(request):
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_images(request):
+def add_news_images(request):
     payload = {}
     data = {}
     errors = {}
@@ -104,16 +101,16 @@ def add_images(request):
             )
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_videos(request):
+def add_news_videos(request):
     payload = {}
     data = {}
     errors = {}
@@ -143,10 +140,10 @@ def add_videos(request):
             )
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -291,12 +288,10 @@ def edit_news(request):
 
         data["news_id"] = news.news_id
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
-
-
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
@@ -327,10 +322,10 @@ def archive_news(request):
         news.save()
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -365,10 +360,10 @@ def unarchive_news(request):
         news.save()
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -402,10 +397,10 @@ def delete_news(request):
         news.delete()
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -504,7 +499,7 @@ def add_news_comment(request):
             user=user
         )
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)

@@ -50,7 +50,7 @@ def add_product(request):
 
 
         try:
-            category = Category.objects.get(category_id=category_id)
+            category = Category.objects.get(id=category_id)
         except:
             errors['category_id'] = ['Category does not exist.']
 
@@ -72,10 +72,10 @@ def add_product(request):
         data["product_id"] = new_product.product_id
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 def check_product_name_exist(name):
     qs = Product.objects.filter(name=name)
@@ -115,16 +115,16 @@ def add_product_images(request):
                 image=image
             )
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
-def add_videos(request):
+def add_product_videos(request):
     payload = {}
     data = {}
     errors = {}
@@ -151,10 +151,10 @@ def add_videos(request):
                 video=video
             )
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -280,7 +280,7 @@ def edit_product(request):
 
 
         try:
-            category = Category.objects.get(category_id=category_id)
+            category = Category.objects.get(id=category_id)
         except:
             errors['category_id'] = ['Category does not exist.']
 

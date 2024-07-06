@@ -15,13 +15,45 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.api.serializers import UserRegistrationSerializer, PasswordResetSerializer, ListAllUsersSerializer
+from accounts.api.serializers import UserRegistrationSerializer, PasswordResetSerializer, ListAllUsersSerializer, \
+    UserDetailsSerializer
 from activities.models import AllActivity
 from communications.models import PrivateChatRoom
-from user_profile.models import UserProfile
+from user_profile.models import UserProfile, UserPhoto, UserInterest
 from wghsoga_project.utils import generate_email_token, generate_random_otp_code
 
 User = get_user_model()
+
+
+@api_view(['POST', ])
+@permission_classes([])
+@authentication_classes([])
+def validate_email(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        email = request.data.get('email', "").lower()
+
+        if not email:
+            errors['email'] = ['User Email is required.']
+        elif not is_valid_email(email):
+            errors['email'] = ['Valid email required.']
+        elif check_email_exist(email):
+            errors['email'] = ['Email or User already exists in our database.']
+
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+
+        payload['message'] = "Successful"
+        payload['data'] = data
+
+    return Response(payload)
 
 
 @api_view(['POST', ])
@@ -121,7 +153,7 @@ def register_user(request):
 
         token = Token.objects.get(user=user)
 
-        data['token'] = token
+        data['token'] = token.key
 
         email_token = generate_email_token()
 
@@ -476,7 +508,7 @@ class UserLogin(APIView):
         data["year_group"] = user.year_group
         data["country"] = user.country
 
-        data['token'] = token
+        data['token'] = token.key
 
         payload['message'] = "Successful"
         payload['data'] = data
@@ -500,10 +532,10 @@ def check_password(email, password):
 
 
 
-
-
 class PasswordResetView(generics.GenericAPIView):
     serializer_class = PasswordResetSerializer
+
+
 
     def post(self, request, *args, **kwargs):
         payload = {}
@@ -530,6 +562,7 @@ class PasswordResetView(generics.GenericAPIView):
                 payload['errors'] = errors
                 return Response(payload, status=status.HTTP_404_NOT_FOUND)
 
+
         user = User.objects.filter(email=email).first()
         otp_code = generate_random_otp_code()
         user.otp_code = otp_code
@@ -538,12 +571,11 @@ class PasswordResetView(generics.GenericAPIView):
         context = {
             'otp_code': otp_code,
             'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name
+            'first_name': user.first_name
         }
 
-        txt_ = get_template("registration/emails/send_estimate.txt").render(context)
-        html_ = get_template("registration/emails/send_estimate.html").render(context)
+        txt_ = get_template("registration/emails/send_otp.txt").render(context)
+        html_ = get_template("registration/emails/send_otp.html").render(context)
 
         subject = 'OTP CODE'
         from_email = settings.DEFAULT_FROM_EMAIL
@@ -565,7 +597,7 @@ class PasswordResetView(generics.GenericAPIView):
             fail_silently=False,
         )
 
-        #data["otp_code"] = otp_code
+        data["otp_code"] = otp_code
         data["email"] = user.email
         data["user_id"] = user.user_id
 
@@ -667,8 +699,8 @@ def resend_password_otp(request):
         'last_name': user.last_name
     }
 
-    txt_ = get_template("registration/emails/send_estimate.txt").render(context)
-    html_ = get_template("registration/emails/send_estimate.html").render(context)
+    txt_ = get_template("registration/emails/send_otp.txt").render(context)
+    html_ = get_template("registration/emails/send_otp.html").render(context)
 
     subject = 'OTP CODE'
     from_email = settings.DEFAULT_FROM_EMAIL
@@ -766,6 +798,96 @@ def new_password_reset_view(request):
 
     return Response(payload, status=status.HTTP_200_OK)
 
+
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def update_user_info_view(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+
+        user_id = request.data.get('user_id', "")
+        photos = request.data.get('photos', [])
+        bio = request.data.get('bio', "")
+        interests = request.data.get('interests', [])
+        profession = request.data.get('profession', "")
+        job_title = request.data.get('job_title', "")
+        place_of_work = request.data.get('place_of_work', "")
+        city = request.data.get('city', "")
+        house = request.data.get('house', "")
+
+        website = request.data.get('website', "")
+        linked_in = request.data.get('linked_in', "")
+        instagram = request.data.get('instagram', "")
+        facebook = request.data.get('facebook', "")
+        twitter = request.data.get('twitter', "")
+
+
+        try:
+            user = User.objects.get(user_id=user_id)
+        except:
+            errors['user_id'] = ['User does not exist.']
+
+        try:
+            profile = UserProfile.objects.get(user=user)
+        except:
+            errors['user_id'] = ['User does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+
+        if user:
+            user.about_me = bio
+            user.save()
+
+        if profile:
+            profile.profession = profession
+            profile.job_title = job_title
+            profile.place_of_work = place_of_work
+            profile.city = city
+
+            profile.house = house
+
+            profile.website = website
+            profile.linked_in = linked_in
+            profile.instagram = instagram
+            profile.facebook = facebook
+            profile.twitter = twitter
+
+            profile.save()
+
+
+        for photo in photos:
+            new_photo = UserPhoto.objects.create(
+                user=user,
+                photo=photo
+            )
+
+        for interest in interests:
+            new_interest = UserInterest.objects.create(
+                user=user,
+                interest=interest
+            )
+
+        user_photos = UserPhoto.objects.filter(
+            user=user
+        ).first()
+
+        user.photo = user_photos.photo
+        user.save()
+
+        payload['message'] = "Successful"
+        payload['data'] = data
+
+    return Response(payload)
 
 
 
@@ -977,8 +1099,12 @@ def get_user_details_view(request):
         return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
 
+    user_detail_serializer = UserDetailsSerializer(user, many=False)
+    if user_detail_serializer:
+        user_detail = user_detail_serializer.data
+
     payload['message'] = "Successful"
-    payload['data'] = user
+    payload['data'] = user_detail
 
     return Response(payload, status=status.HTTP_200_OK)
 
@@ -1022,7 +1148,7 @@ def archive_user_view(request):
         payload['message'] = "Successful"
         payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -1064,7 +1190,7 @@ def unarchive_user_view(request):
         payload['message'] = "Successful"
         payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -1099,5 +1225,5 @@ def delete_user_view(request):
         payload['message'] = "Successful"
         payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 

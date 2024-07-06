@@ -44,13 +44,13 @@ def add_category(request):
             description=description,
         )
 
-        data["category_id"] = new_category.category_id
+        data["category_id"] = new_category.id
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 def check_category_name_exist(name):
     qs = Category.objects.filter(name=name)
@@ -74,7 +74,7 @@ def get_all_category_view(request):
     page_number = request.query_params.get('page', 1)
     page_size = 10
 
-    all_categories = Category.objects.all().filter(is_archived=False)
+    all_categories = Category.objects.all()
 
 
     if search_query:
@@ -111,39 +111,6 @@ def get_all_category_view(request):
     return Response(payload, status=status.HTTP_200_OK)
 
 
-@api_view(['GET', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
-def get_category_details_view(request):
-    payload = {}
-    data = {}
-    errors = {}
-
-    category_id = request.query_params.get('category_id', None)
-
-    if not category_id:
-        errors['category_id'] = ["Category id required"]
-
-    try:
-        category = Category.objects.get(category_id=category_id)
-    except:
-        errors['category_id'] = ['Category does not exist.']
-
-    if errors:
-        payload['message'] = "Errors"
-        payload['errors'] = errors
-        return Response(payload, status=status.HTTP_400_BAD_REQUEST)
-
-    category_serializer = CategoryDetailsSerializer(category, many=False)
-    if category_serializer:
-        category = category_serializer.data
-
-
-    payload['message'] = "Successful"
-    payload['data'] = category
-
-    return Response(payload, status=status.HTTP_200_OK)
-
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
@@ -169,7 +136,7 @@ def edit_category(request):
 
 
         try:
-            category = Category.objects.get(category_id=category_id)
+            category = Category.objects.get(id=category_id)
         except:
             errors['category_id'] = ['Category does not exist.']
 
@@ -183,13 +150,13 @@ def edit_category(request):
         category.description = description
         category.save()
 
-        data["category_id"] = category.category_id
+        data["category_id"] = category.id
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -223,10 +190,10 @@ def archive_category(request):
 
 
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = data
 
-    return Response(payload)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 
@@ -245,7 +212,7 @@ def delete_category(request):
             errors['category_id'] = ['Category ID is required.']
 
         try:
-            category = Category.objects.get(category_id=category_id)
+            category = Category.objects.get(id=category_id)
         except:
             errors['category_id'] = ['Category does not exist.']
 
@@ -256,88 +223,6 @@ def delete_category(request):
 
         category.delete()
 
-
-        payload['message'] = "Successful"
-        payload['data'] = data
-
-    return Response(payload)
-
-
-
-@api_view(['POST', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
-def unarchive_category(request):
-    payload = {}
-    data = {}
-    errors = {}
-
-    if request.method == 'POST':
-        category_id = request.data.get('category_id', "")
-
-        if not category_id:
-            errors['category_id'] = ['Category ID is required.']
-
-        try:
-            category = Category.objects.get(category_id=category_id)
-        except:
-            errors['category_id'] = ['Category does not exist.']
-
-        if errors:
-            payload['message'] = "Errors"
-            payload['errors'] = errors
-            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
-
-        category.is_archived = False
-        category.save()
-
-        payload['message'] = "Successful"
-        payload['data'] = data
-
-    return Response(payload)
-
-
-@api_view(['GET', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
-def get_all_archived_categories_view(request):
-    payload = {}
-    data = {}
-    errors = {}
-
-    search_query = request.query_params.get('search', '')
-    page_number = request.query_params.get('page', 1)
-    page_size = 10
-
-    all_categories = Category.objects.all().filter(is_archived=True)
-
-
-    if search_query:
-        all_categories = all_categories.filter(
-            Q(category_id__icontains=search_query) |
-            Q(name__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
-
-    paginator = Paginator(all_categories, page_size)
-
-    try:
-        paginated_categories = paginator.page(page_number)
-    except PageNotAnInteger:
-        paginated_categories = paginator.page(1)
-    except EmptyPage:
-        paginated_categories = paginator.page(paginator.num_pages)
-
-    all_categories_serializer = AllCategorySerializer(paginated_categories, many=True)
-
-
-    data['categories'] = all_categories_serializer.data
-    data['pagination'] = {
-        'page_number': paginated_categories.number,
-        'total_pages': paginator.num_pages,
-        'next': paginated_categories.next_page_number() if paginated_categories.has_next() else None,
-        'previous': paginated_categories.previous_page_number() if paginated_categories.has_previous() else None,
-    }
 
     payload['message'] = "Successful"
     payload['data'] = data
