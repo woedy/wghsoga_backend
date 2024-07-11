@@ -23,7 +23,7 @@ def upload_image_path(instance, filename):
 
 
 class UserProfile(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
     profile_id = models.CharField(max_length=200, null=True, blank=True)
 
     room = models.ForeignKey(PrivateChatRoom, on_delete=models.SET_NULL, null=True, blank=True, related_name="guards_user_room")

@@ -111,11 +111,12 @@ class User(AbstractBaseUser):
     profile_complete = models.BooleanField(default=False)
     verified = models.BooleanField(default=False)
 
+    is_archived = models.BooleanField(default=False)
+
     location_name = models.CharField(max_length=200, null=True, blank=True)
     lat = models.DecimalField(max_digits=30, decimal_places=15, null=True, blank=True)
     lng = models.DecimalField(max_digits=30, decimal_places=15, null=True, blank=True)
 
-    is_archived = models.BooleanField(default=False)
 
 
     is_active = models.BooleanField(default=True)

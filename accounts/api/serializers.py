@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+
+from user_profile.api.serializers import UserProfileSerializer
+
 User = get_user_model()
 
 
@@ -39,6 +42,7 @@ class PasswordResetSerializer(serializers.Serializer):
 
 
 class UserDetailsSerializer(serializers.ModelSerializer):
+    user_profile = UserProfileSerializer(many=False)
 
     class Meta:
         model = User
@@ -48,7 +52,11 @@ class UserDetailsSerializer(serializers.ModelSerializer):
 
 
 class ListAllUsersSerializer(serializers.ModelSerializer):
+    user_profile = UserProfileSerializer(many=False)
 
     class Meta:
         model = User
         fields = "__all__"
+
+
+
