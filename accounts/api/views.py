@@ -951,9 +951,9 @@ def edit_account(request):
 
 
 
-@api_view(['GET', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
 def list_all_users_view(request):
     payload = {}
     data = {}
@@ -961,11 +961,16 @@ def list_all_users_view(request):
 
     search_query = request.query_params.get('search', '')
     page_number = request.query_params.get('page', 1)
-    filter_year_group = request.query_params.get('filter_year_group', "")
-    page_size = 10
+    page_size = 2  # Adjust the page size as needed
 
-    users = User.objects.filter(is_archived=False)
+    # Get filter parameters
+    year_group = request.query_params.get('year_group', '')
+    city = request.query_params.get('city', '')
+    house = request.query_params.get('house', '')
 
+    users = User.objects.filter(is_archived=False, admin=False)
+
+    # Apply search query if provided
     if search_query:
         users = users.filter(
             Q(email__icontains=search_query) |
@@ -980,10 +985,13 @@ def list_all_users_view(request):
             Q(location_name__icontains=search_query)
         )
 
-    if filter_year_group:
-        users = users.filter(
-            Q(year_group__icontains=filter_year_group),
-        )
+    # Apply filters dynamically
+    if year_group:
+        users = users.filter(year_group__icontains=year_group)
+    if city:
+        users = users.filter(user_profile__city__icontains=city)
+    if house:
+        users = users.filter(user_profile__house__icontains=house)
 
     paginator = Paginator(users, page_size)
 
@@ -1004,13 +1012,12 @@ def list_all_users_view(request):
         'previous': paginated_users.previous_page_number() if paginated_users.has_previous() else None,
     }
 
+    #print(users_serializer.data)
+
     payload['message'] = "Successful"
     payload['data'] = data
 
     return Response(payload, status=status.HTTP_200_OK)
-
-
-
 
 
 
