@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from user_profile.api.serializers import UserProfileSerializer
+from user_profile.api.serializers import UserProfileSerializer, UserInterestSerializer
 
 User = get_user_model()
 
@@ -43,12 +43,15 @@ class PasswordResetSerializer(serializers.Serializer):
 
 class UserDetailsSerializer(serializers.ModelSerializer):
     user_profile = UserProfileSerializer(many=False)
+    user_interests = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = "__all__"
 
-
+    def get_user_interests(self, obj):
+        # Fetching only the 'interest' field from the UserInterest model
+        return obj.user_interests.filter(is_deleted=False).values_list('interest', flat=True)
 
 
 class ListAllUsersSerializer(serializers.ModelSerializer):

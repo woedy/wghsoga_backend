@@ -78,7 +78,7 @@ class ProductImage(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class ProductVideo(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="event_videos")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="product_videos")
     video = models.FileField(upload_to=upload_product_video_path, null=True, blank=True)
 
     is_archived = models.BooleanField(default=False)

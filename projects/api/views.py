@@ -156,8 +156,8 @@ def get_all_projects_view(request):
     if search_query:
         all_projects = all_projects.filter(
             Q(title__icontains=search_query) |
-            Q(detail_name__icontains=search_query) |
-            Q(target__username__icontains=search_query)
+            Q(details__icontains=search_query) |
+            Q(target__icontains=search_query)
         )
 
 

@@ -298,6 +298,51 @@ def edit_event(request):
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
 @authentication_classes([TokenAuthentication, ])
+def add_event_attendee(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        event_id = request.data.get('event_id', "")
+        user_id = request.data.get('user_id', "")
+
+
+        if not event_id:
+            errors['event_id'] = ['Event ID is required.']
+
+        if not user_id:
+            errors['user_id'] = ['User ID is required.']
+
+        try:
+            event = Event.objects.get(event_id=event_id)
+        except:
+            errors['event_id'] = ['Event Does not exist.']
+        try:
+            user = User.objects.get(user_id=user_id)
+        except:
+            errors['user_id'] = ['User Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+        event.attendees.add(user)
+        event.save()
+
+
+        data["event_id"] = event.event_id
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
 def archive_event(request):
     payload = {}
     data = {}

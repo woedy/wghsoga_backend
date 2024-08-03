@@ -7,7 +7,7 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from news.api.serializers import AllNewssSerializer, NewsDetailsSerializer
+from news.api.serializers import NewsDetailsSerializer, AllNewsSerializer
 from news.models import News, NewsImage, NewsVideo, NewsComment
 
 User = get_user_model()
@@ -179,7 +179,7 @@ def get_all_newss_view(request):
     except EmptyPage:
         paginated_newss = paginator.page(paginator.num_pages)
 
-    all_newss_serializer = AllNewssSerializer(paginated_newss, many=True)
+    all_newss_serializer = AllNewsSerializer(paginated_newss, many=True)
 
 
     data['newss'] = all_newss_serializer.data
@@ -498,6 +498,94 @@ def add_news_comment(request):
             comment=comment,
             user=user
         )
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def add_news_likes(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        news_id = request.data.get('news_id', "")
+        user_id = request.data.get('user_id', "")
+
+        if not news_id:
+            errors['news_id'] = ['News ID is required.']
+
+
+        if not user_id:
+            errors['user_id'] = ['User ID is required.']
+
+        try:
+            user = User.objects.get(user_id=user_id)
+        except:
+            errors['user_id'] = ['User Does not exist.']
+
+        try:
+            news = News.objects.get(news_id=news_id)
+        except:
+            errors['news_id'] = ['News Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+
+        news.likes.add(user)
+        news.save()
+
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def share_news(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        news_id = request.data.get('news_id', "")
+        user_id = request.data.get('user_id', "")
+
+        if not news_id:
+            errors['news_id'] = ['News ID is required.']
+
+
+        if not user_id:
+            errors['user_id'] = ['User ID is required.']
+
+        try:
+            user = User.objects.get(user_id=user_id)
+        except:
+            errors['user_id'] = ['User Does not exist.']
+
+        try:
+            news = News.objects.get(news_id=news_id)
+        except:
+            errors['news_id'] = ['News Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+
+        news.shares.add(user)
+        news.save()
+
 
     payload['message'] = "Successful"
     payload['data'] = data
