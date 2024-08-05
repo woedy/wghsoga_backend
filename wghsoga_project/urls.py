@@ -14,6 +14,8 @@ urlpatterns = [
     path('api/news/', include('news.api.urls', 'news_api')),
     path('api/events/', include('events.api.urls', 'events_api')),
     path('api/shop/', include('shop.api.urls', 'shop_api')),
+    path('api/homepage/', include('homepage.api.urls', 'homepage_api')),
+    path('api/notifications/', include('notifications.api.urls', 'notifications_api')),
 
     ## path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     #path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),

@@ -63,7 +63,9 @@ INSTALLED_APPS = [
     'projects',
     'news',
     'events',
-    'shop'
+    'shop',
+    'homepage',
+    'notifications',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
