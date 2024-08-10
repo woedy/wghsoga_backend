@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from accounts.api.serializers import ListAllUsersSerializer
 from events.api.serializers import AllEventsSerializer
 from events.models import Event, EventVideo, EventImage
+from homepage.api.serializers import HomeListAllUsersSerializer, HomeAllEventsSerializer, HomeAllProjectsSerializer, \
+    HomeAllNewsSerializer
 from news.api.serializers import AllNewsSerializer
 from news.models import News
 from notifications.models import Notification
@@ -52,29 +54,32 @@ def get_home_data(request):
     }
     data['user_data'] = user_data
 
-    #all_notification = Notification.objects.all().filter(user=user).order_by('-created_at')
-    #notification_count = all_notification.count()
-    #data['notification_count'] = notification_count
+    all_notification = Notification.objects.all().filter(user=user).filter(read=False).order_by('-created_at')
+
+    if all_notification.count() > 0:
+        data['notification'] = True
+    else:
+        data['notification'] = False
 #
 #
-    #users = User.objects.filter(is_archived=False, admin=False)[:10]
-    #users_serializer = ListAllUsersSerializer(users, many=True)
-    #data['users'] = users_serializer.data
+    users = User.objects.filter(is_archived=False, admin=False)[:10]
+    users_serializer = HomeListAllUsersSerializer(users, many=True)
+    data['users'] = users_serializer.data
 #
 #
-    #all_newss = News.objects.all().filter(is_archived=False)[:10]
-    #all_newss_serializer = AllNewsSerializer(all_newss, many=True)
-    #data['newss'] = all_newss_serializer.data
+    all_newss = News.objects.all().filter(is_archived=False)[:10]
+    all_newss_serializer = HomeAllNewsSerializer(all_newss, many=True)
+    data['news'] = all_newss_serializer.data
 #
 #
-    #all_events = Event.objects.all().filter(is_archived=False)[:10]
-    #all_events_serializer = AllEventsSerializer(all_events, many=True)
-    #data['events'] = all_events_serializer.data
+    all_events = Event.objects.all().filter(is_archived=False)[:10]
+    all_events_serializer = HomeAllEventsSerializer(all_events, many=True)
+    data['events'] = all_events_serializer.data
 #
 #
-    #all_projects = Project.objects.all().filter(is_archived=False)
-    #all_projects_serializer = AllProjectsSerializer(all_projects, many=True)
-    #data['projects'] = all_projects_serializer.data
+    all_projects = Project.objects.all().filter(is_archived=False)
+    all_projects_serializer = HomeAllProjectsSerializer(all_projects, many=True)
+    data['projects'] = all_projects_serializer.data
 
 
 
