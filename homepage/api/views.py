@@ -51,6 +51,7 @@ def get_home_data(request):
     user_data = {
         'first_name': user.first_name,
         'photo': user.photo.url,
+        'year_group': user.year_group,
     }
     data['user_data'] = user_data
 
@@ -63,6 +64,7 @@ def get_home_data(request):
 #
 #
     users = User.objects.filter(is_archived=False, admin=False)[:10]
+    #users = User.objects.filter(is_archived=False, admin=False, year_group=user.year_group)[:10]
     users_serializer = HomeListAllUsersSerializer(users, many=True)
     data['users'] = users_serializer.data
 #

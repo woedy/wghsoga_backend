@@ -1,3 +1,4 @@
+import json
 import re
 
 from django.conf import settings
@@ -35,6 +36,7 @@ def validate_email(request):
 
     if request.method == 'POST':
         email = request.data.get('email', "").lower()
+        phone = request.data.get('phone')
 
         if not email:
             errors['email'] = ['User Email is required.']
@@ -43,6 +45,12 @@ def validate_email(request):
         elif check_email_exist(email):
             errors['email'] = ['Email or User already exists in our database.']
 
+
+        if not phone:
+            errors['phone'] = ['Phone is required.']
+
+        elif check_phone_exist(phone):
+            errors['phone'] = ['Phone number already exists in our database.']
 
         if errors:
             payload['message'] = "Errors"
@@ -60,6 +68,156 @@ def validate_email(request):
 @permission_classes([])
 @authentication_classes([])
 def register_user(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        email = request.data.get('email', "").lower()
+
+        first_name = request.data.get('first_name', "")
+        middle_name = request.data.get('middle_name', "")
+        last_name = request.data.get('last_name', "")
+
+        username = request.data.get('username', "")
+        country = request.data.get('country', "")
+        phone = request.data.get('phone', "")
+
+        year_group = request.data.get('year_group', "")
+
+        password = request.data.get('password', "")
+        password2 = request.data.get('password2', "")
+
+        if not email:
+            errors['email'] = ['User Email is required.']
+        elif not is_valid_email(email):
+            errors['email'] = ['Valid email required.']
+        elif check_email_exist(email):
+            errors['email'] = ['Email already exists in our database.']
+
+        if not first_name:
+            errors['first_name'] = ['First Name is required.']
+
+        if not year_group:
+            errors['year_group'] = ['Year group is required.']
+
+        if not phone:
+            errors['phone'] = ['Phone number is required.']
+
+        if not last_name:
+            errors['last_name'] = ['Last Name is required.']
+
+        if not password:
+            errors['password'] = ['Password is required.']
+
+        if not password2:
+            errors['password2'] = ['Password2 is required.']
+
+        if password != password2:
+            errors['password'] = ['Passwords dont match.']
+
+        if not is_valid_password(password):
+            errors['password'] = [
+                'Password must be at least 8 characters long\n- Must include at least one uppercase letter,\n- One lowercase letter, one digit,\n- And one special character']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = UserRegistrationSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            data["user_id"] = user.user_id
+            data["email"] = user.email
+            data["first_name"] = user.first_name
+            data["last_name"] = user.last_name
+
+            room = PrivateChatRoom.objects.create(
+                user=user
+            )
+
+        user.username = username
+        user.year_group = year_group
+        user.country = country
+        user.phone = phone
+        user.save()
+
+        user_profile = UserProfile.objects.create(
+            user=user,
+            room=room,
+        )
+
+
+
+        ## Generate token using the custom serializer
+        #serializer = CustomTokenObtainPairSerializer()
+        #_token = serializer.get_token(user)
+#
+        #token = {
+        #    'refresh': str(_token),
+        #    'access': str(_token.access_token),
+        #}
+
+        token = Token.objects.get(user=user)
+
+        data['token'] = token.key
+
+        email_token = generate_email_token()
+
+        user = User.objects.get(email=email)
+        user.email_token = email_token
+        user.save()
+
+        #context = {
+        #    'email_token': email_token,
+        #    'email': user.email,
+        #    'first_name': user.first_name,
+        #    'last_name': user.last_name
+        #}
+#
+        #txt_ = get_template("registration/emails/verify.html").render(context)
+        #html_ = get_template("registration/emails/verify.txt").render(context)
+#
+        #subject = 'EMAIL CONFIRMATION CODE'
+        #from_email = settings.DEFAULT_FROM_EMAIL
+        #recipient_list = [user.email]
+#
+        ## # Use Celery chain to execute tasks in sequence
+        ## email_chain = chain(
+        ##     send_generic_email.si(subject, txt_, from_email, recipient_list, html_),
+        ## )
+        ## # Execute the Celery chain asynchronously
+        ## email_chain.apply_async()
+#
+        #send_mail(
+        #    subject,
+        #    txt_,
+        #    from_email,
+        #    recipient_list,
+        #    html_message=html_,
+        #    fail_silently=False,
+        #)
+
+        #
+        new_activity = AllActivity.objects.create(
+            user=user,
+            subject="User Registration",
+            body=user.email + " Just created an account."
+        )
+        new_activity.save()
+
+        payload['message'] = "Successful"
+        payload['data'] = data
+
+    return Response(payload)
+
+
+
+@api_view(['POST', ])
+@permission_classes([])
+@authentication_classes([])
+def register_user22(request):
     payload = {}
     data = {}
     errors = {}
@@ -213,6 +371,14 @@ def check_email_exist(email):
         return True
     else:
         return False
+
+
+def check_phone_exist(phone):
+    qs = User.objects.filter(phone=phone)
+    if qs.exists():
+        return True
+    else:
+        return False
 def is_valid_email(email):
     # Regular expression pattern for basic email validation
     pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
@@ -301,6 +467,12 @@ def verify_user_email(request):
     email = request.data.get('email', '').lower()
     email_token = request.data.get('email_token', '')
 
+
+    print('###################')
+    print('###################')
+    print(email_token)
+    print(email)
+
     if not email:
         email_errors.append('Email is required.')
 
@@ -386,34 +558,34 @@ def resend_email_verification(request):
     user.email_token = otp_code
     user.save()
 
-    context = {
-        'email_token': otp_code,
-        'email': user.email,
-        'first_name': user.first_name
-    }
-
-    txt_ = get_template("registration/emails/verify.txt").render(context)
-    html_ = get_template("registration/emails/verify.html").render(context)
-
-    subject = 'OTP CODE'
-    from_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [user.email]
-
-    # # Use Celery chain to execute tasks in sequence
-    # email_chain = chain(
-    #     send_generic_email.si(subject, txt_, from_email, recipient_list, html_),
-    #  )
-    # # Execute the Celery chain asynchronously
-    # email_chain.apply_async()
-
-    send_mail(
-        subject,
-        txt_,
-        from_email,
-        recipient_list,
-        html_message=html_,
-        fail_silently=False,
-    )
+    #context = {
+    #    'email_token': otp_code,
+    #    'email': user.email,
+    #    'first_name': user.first_name
+    #}
+#
+    #txt_ = get_template("registration/emails/verify.txt").render(context)
+    #html_ = get_template("registration/emails/verify.html").render(context)
+#
+    #subject = 'OTP CODE'
+    #from_email = settings.DEFAULT_FROM_EMAIL
+    #recipient_list = [user.email]
+#
+    ## # Use Celery chain to execute tasks in sequence
+    ## email_chain = chain(
+    ##     send_generic_email.si(subject, txt_, from_email, recipient_list, html_),
+    ##  )
+    ## # Execute the Celery chain asynchronously
+    ## email_chain.apply_async()
+#
+    #send_mail(
+    #    subject,
+    #    txt_,
+    #    from_email,
+    #    recipient_list,
+    #    html_message=html_,
+    #    fail_silently=False,
+    #)
 
     #data["otp_code"] = otp_code
     data["emai"] = user.email
@@ -800,94 +972,102 @@ def new_password_reset_view(request):
 
 
 
-
-@api_view(['POST', ])
-@permission_classes([IsAuthenticated, ])
-@authentication_classes([TokenAuthentication, ])
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
 def update_user_info_view(request):
     payload = {}
-    data = {}
     errors = {}
 
-    if request.method == 'POST':
+    # Extract non-file data from request.data
+    user_id = request.data.get('user_id', "")
+    bio = request.data.get('bio', "")
+    interests = request.data.get('interests', [])
+    profession = request.data.get('profession', "")
+    job_title = request.data.get('job_title', "")
+    place_of_work = request.data.get('place_of_work', "")
+    city = request.data.get('city', "")
+    house = request.data.get('house', "")
+    website = request.data.get('website', "")
+    linked_in = request.data.get('linked_in', "")
+    instagram = request.data.get('instagram', "")
+    facebook = request.data.get('facebook', "")
+    twitter = request.data.get('twitter', "")
 
-        user_id = request.data.get('user_id', "")
-        photos = request.data.get('photos', [])
-        bio = request.data.get('bio', "")
-        interests = request.data.get('interests', [])
-        profession = request.data.get('profession', "")
-        job_title = request.data.get('job_title', "")
-        place_of_work = request.data.get('place_of_work', "")
-        city = request.data.get('city', "")
-        house = request.data.get('house', "")
+    # Extract file data from request.FILES
+    photos = request.FILES.getlist('photos')
 
-        website = request.data.get('website', "")
-        linked_in = request.data.get('linked_in', "")
-        instagram = request.data.get('instagram', "")
-        facebook = request.data.get('facebook', "")
-        twitter = request.data.get('twitter', "")
+    try:
+        user = User.objects.get(user_id=user_id)
+    except User.DoesNotExist:
+        errors['user_id'] = ['User does not exist.']
 
+    try:
+        profile = UserProfile.objects.get(user=user)
+    except UserProfile.DoesNotExist:
+        errors['user_id'] = ['User profile does not exist.']
 
-        try:
-            user = User.objects.get(user_id=user_id)
-        except:
-            errors['user_id'] = ['User does not exist.']
+    if errors:
+        payload['message'] = "Errors"
+        payload['errors'] = errors
+        return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            profile = UserProfile.objects.get(user=user)
-        except:
-            errors['user_id'] = ['User does not exist.']
+    # Update user fields if they have values
+    if user:
+        user.about_me = bio if bio else user.about_me
+        user.save()
 
-        if errors:
-            payload['message'] = "Errors"
-            payload['errors'] = errors
-            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+    if profile:
+        profile.profession = profession if profession else profile.profession
+        profile.job_title = job_title if job_title else profile.job_title
+        profile.place_of_work = place_of_work if place_of_work else profile.place_of_work
+        profile.city = city if city else profile.city
+        profile.house = house if house else profile.house
+        profile.website = website if website else profile.website
+        profile.linked_in = linked_in if linked_in else profile.linked_in
+        profile.instagram = instagram if instagram else profile.instagram
+        profile.facebook = facebook if facebook else profile.facebook
+        profile.twitter = twitter if twitter else profile.twitter
+        profile.save()
 
-
-        if user:
-            user.about_me = bio
-            user.save()
-
-        if profile:
-            profile.profession = profession
-            profile.job_title = job_title
-            profile.place_of_work = place_of_work
-            profile.city = city
-
-            profile.house = house
-
-            profile.website = website
-            profile.linked_in = linked_in
-            profile.instagram = instagram
-            profile.facebook = facebook
-            profile.twitter = twitter
-
-            profile.save()
-
-
-        for photo in photos:
-            new_photo = UserPhoto.objects.create(
+    # Handle photo uploads
+    for photo in photos:
+        if photo:
+            UserPhoto.objects.create(
                 user=user,
                 photo=photo
             )
 
-        for interest in interests:
-            new_interest = UserInterest.objects.create(
+    # Handle interests
+    if isinstance(interests, str):
+        try:
+            interests = json.loads(interests)
+        except json.JSONDecodeError:
+            interests = []
+
+    for interest in interests:
+        if interest:
+            UserInterest.objects.create(
                 user=user,
                 interest=interest
             )
 
-        user_photos = UserPhoto.objects.filter(
-            user=user
-        ).first()
-
+    # Update user's photo field (assuming it should store a single photo)
+    user_photos = UserPhoto.objects.filter(user=user).first()
+    if user_photos:
         user.photo = user_photos.photo
         user.save()
 
-        payload['message'] = "Successful"
-        payload['data'] = data
+    payload['message'] = "Successful"
+    payload['data'] = {
+        'bio': bio,
+        'interests': interests,
+        # Include other data as needed
+    }
 
     return Response(payload)
+
+
 
 
 
