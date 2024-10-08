@@ -71,7 +71,7 @@ def add_project_images(request):
         project_id = request.data.get('project_id', "")
 
 
-        images = request.data.get('images', [])
+        images = request.FILES.getlist('images')
 
         try:
            project = Project.objects.get(project_id=project_id)
@@ -150,7 +150,59 @@ def get_all_projects_view(request):
     page_number = request.query_params.get('page', 1)
     page_size = 10
 
-    all_projects = Project.objects.all().filter(is_archived=False)
+    all_projects = Project.objects.all().filter(is_archived=False, draft=False).order_by('-created_at')
+
+
+    if search_query:
+        all_projects = all_projects.filter(
+            Q(title__icontains=search_query) |
+            Q(details__icontains=search_query) |
+            Q(target__icontains=search_query)
+        )
+
+
+    paginator = Paginator(all_projects, page_size)
+
+    try:
+        paginated_projects = paginator.page(page_number)
+    except PageNotAnInteger:
+        paginated_projects = paginator.page(1)
+    except EmptyPage:
+        paginated_projects = paginator.page(paginator.num_pages)
+
+    all_projects_serializer = AllProjectsSerializer(paginated_projects, many=True)
+
+
+    data['projects'] = all_projects_serializer.data
+    data['pagination'] = {
+        'page_number': paginated_projects.number,
+        'total_pages': paginator.num_pages,
+        'next': paginated_projects.next_page_number() if paginated_projects.has_next() else None,
+        'previous': paginated_projects.previous_page_number() if paginated_projects.has_previous() else None,
+    }
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
+@api_view(['GET', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def admin_get_all_projects_view(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    search_query = request.query_params.get('search', '')
+    page_number = request.query_params.get('page', 1)
+    page_size = 10
+
+    all_projects = Project.objects.all().filter(is_archived=False).order_by('-created_at')
 
 
     if search_query:
@@ -279,6 +331,48 @@ def edit_project(request):
         payload['data'] = data
 
     return Response(payload)
+
+
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def post_project(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        project_id = request.data.get('project_id', "")
+
+
+        try:
+            project = Project.objects.get(project_id=project_id)
+        except:
+            errors['project_id'] = ['Project Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+        
+        if project.draft is True:
+            project.draft = False
+        else:
+            project.draft = True
+
+        project.save()
+
+        data["project_id"] = project.project_id
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
 
 
 

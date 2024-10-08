@@ -14,11 +14,14 @@ class News(models.Model):
     title = models.CharField(max_length=5000, null=True, blank=True)
     content = models.TextField(null=True, blank=True)
 
-    likes = models.ManyToManyField(User, related_name='news_likes')
-    shares = models.ManyToManyField(User, related_name='news_shares')
+    likes = models.ManyToManyField(User, blank=True, related_name='news_likes')
+    shares = models.ManyToManyField(User, blank=True, related_name='news_shares')
 
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="news_author")
 
+    draft = models.BooleanField(default=True)
+    read_duration = models.CharField(max_length=100, null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
@@ -45,7 +48,7 @@ def upload_news_image_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "news/{new_filename}/{final_filename}".format(
+    return "news/images/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )
@@ -55,7 +58,7 @@ def upload_news_video_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "news/videos/{new_filename}/{final_filename}".format(
+    return "news/videos/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )

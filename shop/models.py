@@ -27,6 +27,9 @@ class Product(models.Model):
     stock = models.IntegerField()
     available = models.BooleanField(default=True)
 
+    draft = models.BooleanField(default=True)
+
+
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -51,7 +54,7 @@ def upload_product_image_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "product/{new_filename}/{final_filename}".format(
+    return "product/images/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )
@@ -61,7 +64,7 @@ def upload_product_video_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "product/videos/{new_filename}/{final_filename}".format(
+    return "product/videos/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )
@@ -90,6 +93,7 @@ class ProductVideo(models.Model):
 
 
 class Order(models.Model):
+    order_id = models.CharField(max_length=200, null=True, blank=True)
     customer = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=(
         ('Pending', 'Pending'),
@@ -129,10 +133,10 @@ class OrderItem(models.Model):
 
 class ShippingAddress(models.Model):
     order = models.OneToOneField(Order, related_name='shipping_address', on_delete=models.CASCADE)
-    address = models.TextField()
-    city = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20)
-    country = models.CharField(max_length=100)
+    address = models.TextField(null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    postal_code = models.CharField(max_length=20, null=True, blank=True)
+    country = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.address

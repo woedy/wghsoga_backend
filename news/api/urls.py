@@ -1,6 +1,6 @@
 from django.urls import path
 
-from news.api.views import add_news, edit_news, get_all_newss_view, get_news_details_view, archive_news, delete_news, \
+from news.api.views import add_news, admin_get_all_newss_view, edit_news, get_all_newss_view, get_news_details_view, archive_news, delete_news, post_news, \
     unarchive_news, get_all_archived_newss_view, add_news_images, add_news_videos, add_news_comment, add_news_likes, \
     share_news
 
@@ -14,11 +14,15 @@ urlpatterns = [
     path('add-news-likes/', add_news_likes, name="add_news_likes"),
     path('share-news/', share_news, name="share_news"),
     path('edit-news/', edit_news, name="edit_news"),
+       path('post-news/', post_news, name="post_news"),
     path('get-all-news/', get_all_newss_view, name="get_all_newss_view"),
     path('get-news-details/', get_news_details_view, name="get_news_details_view"),
     path('archive-news/', archive_news, name="archive_news"),
     path('delete-news/', delete_news, name="delete_news"),
     path('unarchive-news/', unarchive_news, name="unarchive_news"),
     path('get-all-archived-news/', get_all_archived_newss_view, name="get_all_archived_newss_view"),
+
+
+    path('admin/get-all-news/', admin_get_all_newss_view, name="admin_get_all_newss_view"),
 
 ]

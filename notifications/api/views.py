@@ -5,10 +5,12 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import permission_classes, api_view, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.contrib.auth import get_user_model
 
 from notifications.api.serializers import AllNotificationsSerializer
 from notifications.models import Notification
 
+User = get_user_model()
 
 @api_view(['POST', ])
 @permission_classes([IsAuthenticated, ])
@@ -64,20 +66,27 @@ def get_all_notifications(request):
     search_query = request.query_params.get('search', '')
     filter_department = request.query_params.get('filter_department', '')
     page_number = request.query_params.get('page', 1)
+    user_id = request.query_params.get('user_id', '')
+
     page_size = 10
 
-    all_notification = Notification.objects.all().order_by('-created_at')
+    if not user_id:
+        errors['user_id'] = ['User ID is required.']
 
 
-    if search_query:
-        all_notification = all_notification.filter(
-            Q(department__icontains=search_query)
-        )
 
-    if filter_department:
-        all_notification = all_notification.filter(
-            department__icontains=filter_department
-        )
+    try:
+        user = User.objects.get(user_id=user_id)
+    except:
+        errors['user_id'] = ['User Does not exist.']
+
+    if errors:
+        payload['message'] = "Errors"
+        payload['errors'] = errors
+        return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    all_notification = Notification.objects.all().filter(user=user).order_by('-created_at')
 
 
     paginator = Paginator(all_notification, page_size)

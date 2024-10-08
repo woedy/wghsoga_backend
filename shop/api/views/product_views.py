@@ -97,7 +97,7 @@ def add_product_images(request):
     if request.method == 'POST':
         product_id = request.data.get('product_id', "")
 
-        images = request.data.get('images', [])
+        images = request.FILES.getlist('images')
 
         try:
             product = Product.objects.get(product_id=product_id)
@@ -170,7 +170,59 @@ def get_all_product_view(request):
     page_number = request.query_params.get('page', 1)
     page_size = 10
 
-    all_products = Product.objects.all().filter(is_archived=False)
+    all_products = Product.objects.all().filter(is_archived=False, draft=False).order_by('-created_at')
+
+
+    if search_query:
+        all_products = all_products.filter(
+            Q(product_id__icontains=search_query) |
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+
+    paginator = Paginator(all_products, page_size)
+
+    try:
+        paginated_products = paginator.page(page_number)
+    except PageNotAnInteger:
+        paginated_products = paginator.page(1)
+    except EmptyPage:
+        paginated_products = paginator.page(paginator.num_pages)
+
+    all_products_serializer = AllProductSerializer(paginated_products, many=True)
+
+
+    data['products'] = all_products_serializer.data
+    data['pagination'] = {
+        'page_number': paginated_products.number,
+        'total_pages': paginator.num_pages,
+        'next': paginated_products.next_page_number() if paginated_products.has_next() else None,
+        'previous': paginated_products.previous_page_number() if paginated_products.has_previous() else None,
+    }
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
+@api_view(['GET', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def admin_get_all_product_view(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    search_query = request.query_params.get('search', '')
+    page_number = request.query_params.get('page', 1)
+    page_size = 10
+
+    all_products = Product.objects.all().filter(is_archived=False).order_by('-created_at')
 
 
     if search_query:
@@ -311,6 +363,49 @@ def edit_product(request):
     payload['data'] = data
 
     return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def post_product(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        product_id = request.data.get('product_id', "")
+
+
+        try:
+            product = Product.objects.get(product_id=product_id)
+        except:
+            errors['product_id'] = ['Product Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+        
+        if product.draft is True:
+            product.draft = False
+        else:
+            product.draft = True
+
+        product.save()
+
+        data["product_id"] = product.product_id
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
 
 
 

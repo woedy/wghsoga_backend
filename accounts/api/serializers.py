@@ -44,6 +44,7 @@ class PasswordResetSerializer(serializers.Serializer):
 class UserDetailsSerializer(serializers.ModelSerializer):
     user_profile = UserProfileSerializer(many=False)
     user_interests = serializers.SerializerMethodField()
+    user_photos = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -54,12 +55,22 @@ class UserDetailsSerializer(serializers.ModelSerializer):
         return obj.user_interests.filter(is_deleted=False).values_list('interest', flat=True)
 
 
+
+    def get_user_photos(self, obj):
+        # Fetching only the 'photos' field from the UserPhotos model
+        return obj.user_photos.filter(is_deleted=False).values_list('photo', flat=True)
+
+
 class ListAllUsersSerializer(serializers.ModelSerializer):
-    user_profile = UserProfileSerializer(many=False)
+    house = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = "__all__"
+        fields = ["user_id", "email", "first_name", "middle_name", "last_name", "username", "photo", "house", "phone", "year_group"]
 
-
-
+    def get_house(self, obj):
+        # Access the related UserProfile instance
+        user_profile = getattr(obj, 'user_profile', None)
+        if user_profile:
+            return user_profile.house
+        return None

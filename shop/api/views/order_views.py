@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from shop.api.serializers import AllOrderSerializer, OrderDetailsSerializer
+from shop.api.serializers import AllOrdersSerializer, OrderDetailsSerializer
 from shop.models import Order
 
 User = get_user_model()
@@ -91,7 +91,7 @@ def get_all_orders_view(request):
     except EmptyPage:
         paginated_orders = paginator.page(paginator.num_pages)
 
-    all_orders_serializer = AllOrderSerializer(paginated_orders, many=True)
+    all_orders_serializer = AllOrdersSerializer(paginated_orders, many=True)
 
 
     data['orders'] = all_orders_serializer.data

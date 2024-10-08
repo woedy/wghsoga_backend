@@ -14,13 +14,15 @@ class Event(models.Model):
     theme = models.CharField(max_length=1000, null=True, blank=True)
     subject = models.TextField(null=True, blank=True)
 
-    attendees = models.ManyToManyField(User, related_name='event_attendees')
+    attendees = models.ManyToManyField(User, related_name='event_attendees', blank=True)
 
     event_date = models.DateField(null=True, blank=True)
     event_time = models.TimeField(null=True, blank=True)
 
     venue = models.CharField(max_length=1000, null=True, blank=True)
     organised_by = models.CharField(max_length=1000, null=True, blank=True)
+
+    draft = models.BooleanField(default=True)
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
@@ -49,7 +51,7 @@ def upload_event_image_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "news/{new_filename}/{final_filename}".format(
+    return "events/images/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )
@@ -59,7 +61,7 @@ def upload_event_video_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "event/videos/{new_filename}/{final_filename}".format(
+    return "event/videos/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )

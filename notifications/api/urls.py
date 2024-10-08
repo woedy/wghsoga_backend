@@ -2,7 +2,7 @@ from django.urls import path
 
 from notifications.api.views import set_notification_to_read, get_all_notifications, delete_notification
 
-app_name = 'notification'
+app_name = 'notifications'
 
 urlpatterns = [
     path('set-to-read/', set_notification_to_read, name="set_notification_to_read"),

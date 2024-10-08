@@ -1,6 +1,6 @@
 from django.urls import path
 
-from accounts.api.views import register_user, verify_user_email, resend_email_verification, UserLogin, \
+from accounts.api.views import AdminLogin, add_user, admin_get_user_details_view, admin_list_all_users_view, register_admin, register_user, verify_student, verify_user_email, resend_email_verification, UserLogin, \
     PasswordResetView, confirm_otp_password_view, resend_password_otp, new_password_reset_view, remove_user_view, \
     edit_account, list_all_users_view, list_all_archived_users_view, get_user_details_view, archive_user_view, \
     unarchive_user_view, delete_user_view, validate_email, update_user_info_view
@@ -35,5 +35,16 @@ urlpatterns = [
     path('delete-user/', delete_user_view, name="delete_user_view"),
 
     path('update-user-info/', update_user_info_view, name="update_user_info_view"),
+    path('verify-student/', verify_student, name="verify_student"),
+
+
+
+path('register-admin/', register_admin, name="register_admin"),
+    path('login-admin/', AdminLogin.as_view(), name="login_admin"),
+        path('admin/add-user/', add_user, name="add_user"),
+            path('admin/get-all-users/', admin_list_all_users_view, name="admin_list_all_users_view"),
+
+    path('admin/get-user-details/', admin_get_user_details_view, name="admin_get_user_details_view"),
+
 
 ]

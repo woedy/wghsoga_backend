@@ -16,6 +16,8 @@ class Project(models.Model):
     target = models.CharField(max_length=500, null=True, blank=True)
     raised = models.CharField(max_length=500, null=True, blank=True)
 
+    draft = models.BooleanField(default=True)
+
 
     is_archived = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
@@ -42,7 +44,7 @@ def upload_project_image_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "project/images/{new_filename}/{final_filename}".format(
+    return "project/images/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )
@@ -52,7 +54,7 @@ def upload_project_video_path(instance, filename):
     new_filename = random.randint(1, 3910209312)
     name, ext = get_file_ext(filename)
     final_filename = '{new_filename}{ext}'.format(new_filename=new_filename, ext=ext)
-    return "project/video/{new_filename}/{final_filename}".format(
+    return "project/videos/{final_filename}".format(
         new_filename=new_filename,
         final_filename=final_filename
     )

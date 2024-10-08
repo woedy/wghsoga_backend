@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
@@ -80,7 +81,7 @@ def add_news_images(request):
         news_id = request.data.get('news_id', "")
 
 
-        images = request.data.get('images', [])
+        images = request.FILES.getlist('images')
 
         try:
            news = News.objects.get(news_id=news_id)
@@ -159,7 +160,59 @@ def get_all_newss_view(request):
     page_number = request.query_params.get('page', 1)
     page_size = 10
 
-    all_newss = News.objects.all().filter(is_archived=False)
+    all_newss = News.objects.all().filter(is_archived=False, draft=False).order_by('-created_at')
+
+
+    if search_query:
+        all_newss = all_newss.filter(
+            Q(title__icontains=search_query) |
+            Q(content__icontains=search_query) |
+            Q(author__user_id__icontains=search_query)
+        )
+
+
+    paginator = Paginator(all_newss, page_size)
+
+    try:
+        paginated_newss = paginator.page(page_number)
+    except PageNotAnInteger:
+        paginated_newss = paginator.page(1)
+    except EmptyPage:
+        paginated_newss = paginator.page(paginator.num_pages)
+
+    all_newss_serializer = AllNewsSerializer(paginated_newss, many=True)
+
+
+    data['newss'] = all_newss_serializer.data
+    data['pagination'] = {
+        'page_number': paginated_newss.number,
+        'total_pages': paginator.num_pages,
+        'next': paginated_newss.next_page_number() if paginated_newss.has_next() else None,
+        'previous': paginated_newss.previous_page_number() if paginated_newss.has_previous() else None,
+    }
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
+@api_view(['GET', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def admin_get_all_newss_view(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    search_query = request.query_params.get('search', '')
+    page_number = request.query_params.get('page', 1)
+    page_size = 10
+
+    all_newss = News.objects.all().filter(is_archived=False).order_by('-created_at')
 
 
     if search_query:
@@ -292,6 +345,50 @@ def edit_news(request):
     payload['data'] = data
 
     return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def post_news(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        news_id = request.data.get('news_id', "")
+
+
+        try:
+            news = News.objects.get(news_id=news_id)
+        except:
+            errors['news_id'] = ['News Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+        
+        if news.draft is True:
+            news.draft = False
+            news.published_at = datetime.now()
+        else:
+            news.draft = True
+
+        news.save()
+       
+
+        data["news_id"] = news.news_id
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
 
 
 @api_view(['POST', ])

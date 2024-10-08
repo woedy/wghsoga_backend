@@ -1,10 +1,10 @@
 version: "3.8"
-services:
 
+services:
   # Redis
   redis:
     image: redis:alpine
-    container_name: tas_redis
+    container_name: wghsoga_redis
 
   # Database Postgres
   db:
@@ -12,59 +12,61 @@ services:
     volumes:
       - ./data/db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=tas_postgres
-      - POSTGRES_USER=tas_postgres
-      - POSTGRES_PASSWORD=tas_postgres
-    container_name: tas_postgres_db
-    restart: unless-stopped
+      - POSTGRES_DB=wghsoga_postgres
+      - POSTGRES_USER=wghsoga_postgres
+      - POSTGRES_PASSWORD=wghsoga_postgres
+    container_name: wghsoga_postgres_db
 
   # Django Application
-  tas_app:
-    build: .
+  wghsoga_app:
+    build:
+      context: .
     volumes:
-      - .:/tas_django
+      - .:/wghsoga_django
       - ./static_cdn:/var/lib/static_cdn
     ports:
-      - 80:80
-    image: tas_app:django
-    container_name: tas_django_app
-    command: python manage.py runserver 0.0.0.0:80
+      - 5050:5050
+    container_name: wghsoga_app
+    command: python manage.py runserver 0.0.0.0:5050
     depends_on:
       - db
-    restart: unless-stopped
+
+  # React Application
+  wghsoga_frontend:
+    build:
+      context: ../wghsoga_frontend  # Adjust the path to your React app
+    ports:
+      - "3000:5000"  # Map to the host's port
+    environment:
+      - REACT_APP_API_URL=http://wghsoga_app:5050  # API URL for Django service
 
   # Celery Worker
   celery:
     restart: always
     build:
       context: .
-    command: celery -A tas_project worker -l DEBUG
+    command: celery -A wghsoga_project worker -l DEBUG
     volumes:
-      - .:/tas_django
-    container_name: tas_celery
+      - .:/wghsoga_django
+    container_name: wghsoga_celery
     depends_on:
       - db
       - redis
-      - tas_app
+      - wghsoga_app
 
   # Celery Beat
   celery-beat:
     restart: always
     build:
       context: .
-    command: celery -A tas_project beat -l DEBUG
+    command: celery -A wghsoga_project beat -l DEBUG
     volumes:
-      - .:/tas_django
-    container_name: tas_celery_beat
+      - .:/wghsoga_django
+    container_name: wghsoga_celery_beat
     depends_on:
       - db
       - redis
-      - tas_app
+      - wghsoga_app
 
 volumes:
   static_cdn:
-
-#networks:
-#  default:
-#    external: true
-#    name: docker-nginx-proxy-manager

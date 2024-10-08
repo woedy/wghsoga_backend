@@ -85,7 +85,7 @@ def add_event_images(request):
     if request.method == 'POST':
         event_id = request.data.get('event_id', "")
 
-        images = request.data.get('images', [])
+        images = request.FILES.getlist('images')
 
         try:
             event = Event.objects.get(event_id=event_id)
@@ -153,10 +153,11 @@ def get_all_events_view(request):
     errors = {}
 
     search_query = request.query_params.get('search', '')
+    draft = request.query_params.get('draft', '')
     page_number = request.query_params.get('page', 1)
     page_size = 10
 
-    all_events = Event.objects.all().filter(is_archived=False)
+    all_events = Event.objects.all().filter(is_archived=False, draft=False).order_by('-created_at')
 
     if search_query:
         all_events = all_events.filter(
@@ -167,6 +168,74 @@ def get_all_events_view(request):
             Q(venue_time__icontains=search_query) |
             Q(organised_by_time__icontains=search_query)
         )
+
+
+
+    if draft:
+        if draft.lower() in ['true', '1', 't', 'y', 'yes']:
+            all_events = all_events.filter(draft=True)
+        elif draft.lower() in ['false', '0', 'f', 'n', 'no']:
+            all_events = all_events.filter(draft=False)
+
+    paginator = Paginator(all_events, page_size)
+
+    try:
+        paginated_events = paginator.page(page_number)
+    except PageNotAnInteger:
+        paginated_events = paginator.page(1)
+    except EmptyPage:
+        paginated_events = paginator.page(paginator.num_pages)
+
+    all_events_serializer = AllEventsSerializer(paginated_events, many=True)
+
+    data['events'] = all_events_serializer.data
+    data['pagination'] = {
+        'page_number': paginated_events.number,
+        'total_pages': paginator.num_pages,
+        'next': paginated_events.next_page_number() if paginated_events.has_next() else None,
+        'previous': paginated_events.previous_page_number() if paginated_events.has_previous() else None,
+    }
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['GET', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def admin_get_all_events_view(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    search_query = request.query_params.get('search', '')
+    draft = request.query_params.get('draft', '')
+    page_number = request.query_params.get('page', 1)
+    page_size = 10
+
+    all_events = Event.objects.all().filter(is_archived=False).order_by('-created_at')
+
+    if search_query:
+        all_events = all_events.filter(
+            Q(title__icontains=search_query) |
+            Q(subject__icontains=search_query) |
+            Q(event_date__icontains=search_query) |
+            Q(event_time__icontains=search_query) |
+            Q(venue_time__icontains=search_query) |
+            Q(organised_by_time__icontains=search_query)
+        )
+
+
+
+    if draft:
+        if draft.lower() in ['true', '1', 't', 'y', 'yes']:
+            all_events = all_events.filter(draft=True)
+        elif draft.lower() in ['false', '0', 'f', 'n', 'no']:
+            all_events = all_events.filter(draft=False)
 
     paginator = Paginator(all_events, page_size)
 
@@ -293,6 +362,51 @@ def edit_event(request):
     payload['data'] = data
 
     return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
+@api_view(['POST', ])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def post_event(request):
+    payload = {}
+    data = {}
+    errors = {}
+
+    if request.method == 'POST':
+        event_id = request.data.get('event_id', "")
+
+
+        try:
+            event = Event.objects.get(event_id=event_id)
+        except:
+            errors['event_id'] = ['Event Does not exist.']
+
+        if errors:
+            payload['message'] = "Errors"
+            payload['errors'] = errors
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+        
+        if event.draft is True:
+            event.draft = False
+        else:
+            event.draft = True
+
+        event.save()
+
+        data["event_id"] = event.event_id
+
+    payload['message'] = "Successful"
+    payload['data'] = data
+
+    return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
 
 
 @api_view(['POST', ])
