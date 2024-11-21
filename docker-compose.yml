@@ -25,9 +25,9 @@ services:
       - .:/wghsoga_django
       - ./static_cdn:/var/lib/static_cdn
     ports:
-      - 5050:5050
+      - 6060:6060
     container_name: wghsoga_app
-    command: python manage.py runserver 0.0.0.0:5050
+    command: python manage.py runserver 0.0.0.0:6060
     depends_on:
       - db
 
@@ -36,9 +36,9 @@ services:
     build:
       context: ../wghsoga_frontend  # Adjust the path to your React app
     ports:
-      - "3000:5000"  # Map to the host's port
+      - "7000:7000"  # Map to the host's port
     environment:
-      - REACT_APP_API_URL=http://wghsoga_app:5050  # API URL for Django service
+      - REACT_APP_API_URL=http://wghsoga_app:6060  # API URL for Django service
 
   # Celery Worker
   celery:
